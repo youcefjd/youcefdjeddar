@@ -1,13 +1,11 @@
 ---
 layout: page
-title: About Me
+title: About
 permalink: /about/
 ---
 
-This is where you put the contents of your *About* page. Like all your pages, it's in [Markdown](https://guides.github.com/features/mastering-markdown/) format.
+Welcome to my AI Journal. I'm Youcef, and this is where I document my journey through the world of artificial intelligence.
 
-This website is powered by **[fastpages](https://github.com/fastai/fastpages)** [^1].
+Here you'll find my thoughts, learnings, experiments, and projects as I explore machine learning, deep learning, large language models, and everything AI.
 
-
-
-[^1]:a blogging platform that natively supports Jupyter notebooks in addition to other formats.
+Feel free to reach out if you'd like to connect.
