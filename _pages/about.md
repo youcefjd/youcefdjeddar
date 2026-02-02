@@ -14,4 +14,8 @@ This isn't about toy apps or beginner tutorials. I'm focused on:
 
 Here you'll find practical insights, hard-won lessons, and honest takes on what works and what doesn't when shipping AI-powered software.
 
-Feel free to reach out if you'd like to connect.
+## Connect
+
+- [LinkedIn](https://www.linkedin.com/in/youcefdjeddar/)
+- [GitHub](https://github.com/youcefjd)
+- [djeddar@icloud.com](mailto:djeddar@icloud.com)
