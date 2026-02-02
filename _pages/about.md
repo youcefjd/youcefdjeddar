@@ -4,9 +4,9 @@ title: About
 permalink: /about/
 ---
 
-Welcome to my AI Journal. I'm Youcef, and this is where I document my journey building with AI in production.
+I'm Youcef, a software engineer documenting my experience with agentic AI in production.
 
-This isn't about quickly spinning up toy apps. I'm focused on:
+This isn't about toy apps or beginner tutorials. I'm focused on:
 
 - **Agentic AI** — autonomous systems that can reason, plan, and execute
 - **MCP servers** — the Model Context Protocol and building real integrations
