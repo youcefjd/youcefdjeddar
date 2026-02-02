@@ -19,10 +19,6 @@ plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
 
-# Include _pages directory
-include:
-  - _pages
-
 # Exclude from build
 exclude:
   - Gemfile
