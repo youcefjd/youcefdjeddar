@@ -1,8 +1,8 @@
 ---
 layout: post
-title: "Why I'm Writing This"
+title: "A Blog About Agentic AI in Production"
 date: 2026-02-02
-description: "Documenting what actually works with agentic AI in production."
+description: "What actually works when you ship AI to real users."
 ---
 
 We're in a new era. Agentic AI is changing how software gets built and shipped. I've been using these tools in production and want to document what I'm learning.
