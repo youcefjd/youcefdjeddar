@@ -6,7 +6,9 @@ permalink: /about/
 
 Hey, I'm Youcef.
 
-Software engineer. Writing about agentic AI in production — not the demo, the real thing.
+Staff software engineer. I build and scale distributed systems.
+
+Writing about agentic AI in production — not the demo, the real thing.
 
 MCP servers, AI-assisted coding, autonomous systems. What ships, what breaks, what I learned.
 
