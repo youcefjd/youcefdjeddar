@@ -15,7 +15,7 @@ Every day you hear tech CEOs on X (because who says anything important on Linked
 
 Of course that sounds threatening. When Amodei, Altman, Huang, etc. say this loudly and repeatedly, your boss is listening. Your boss's boss is listening. And they're thinking: *why am I paying all these people?*
 
-If I were your boss's boss, I'd tell them to shut that intrusive thought down immediately.
+If I were your boss' boss' boss, I'd tell them to shut that intrusive thought down immediately.
 
 Why?
 
