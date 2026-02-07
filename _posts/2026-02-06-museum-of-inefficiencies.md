@@ -5,6 +5,16 @@ date: 2026-02-06
 description: "I found a 13% edge in Polymarket. I'm not going to trade it."
 ---
 
+You've seen the tweets.
+
+"I used Claude to build a trading bot that makes me $3,000/day."
+
+"AI + prediction markets = passive income on autopilot."
+
+"Just vibe code your way to financial freedom."
+
+I wanted to test this empirically. Not with vibes. With data.
+
 I found a 13% edge in Polymarket.
 
 I'm not going to trade it.
