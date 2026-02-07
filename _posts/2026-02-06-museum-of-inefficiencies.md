@@ -35,12 +35,10 @@ You know. Normal Tuesday stuff.
 
 Here's what I was tracking:
 
-| Daemon | Hypothesis |
-|--------|------------|
-| Short-horizon | Are favorites/underdogs mispriced in <48h markets? |
-| Flow tracker | Can I follow whale money and ride the wave? |
-| New market tracker | Is there a "stale window" where new markets are mispriced? |
-| Player prop tracker | Are NBA player props systematically wrong? |
+- **Short-horizon** — Are favorites/underdogs mispriced in <48h markets?
+- **Flow tracker** — Can I follow whale money and ride the wave?
+- **New market tracker** — Is there a "stale window" where new markets are mispriced?
+- **Player prop tracker** — Are NBA player props systematically wrong?
 
 Each hypothesis had a clear threshold:
 
@@ -122,11 +120,9 @@ Sometimes initial price is too high. Sometimes too low. No consistent bias. No s
 
 **What I found:**
 
-| Prop Type | Bias | Win Rate |
-|-----------|------|----------|
-| Points O/U | +7.5% | 44% |
-| Assists O/U | +13.6% | 49% |
-| Rebounds O/U | +11.7% | 47% |
+- **Points O/U** — +7.5% bias, 44% win rate
+- **Assists O/U** — +13.6% bias, 49% win rate
+- **Rebounds O/U** — +11.7% bias, 47% win rate
 
 Wait.
 
@@ -146,13 +142,11 @@ I am not celebrating.
 
 Here's the paper-trading reality:
 
-| Metric | Value |
-|--------|-------|
-| Trades opened | 8 |
-| Avg liquidity | $17 |
-| Avg spread | 84% |
-| Trades with >$500 liquidity | 0 |
-| Trades with <15% spread | 1 |
+- **Trades opened:** 8
+- **Avg liquidity:** $17
+- **Avg spread:** 84%
+- **Trades with >$500 liquidity:** 0
+- **Trades with <15% spread:** 1
 
 An 84% spread means if the "price" is 50%, you're actually buying at 96% and selling at 4%.
 
@@ -192,12 +186,10 @@ The market isn't stupid. It's efficient exactly where it needs to be — at the 
 
 ## The Scoreboard
 
-| Hypothesis | Edge Found | Tradeable | Net P&L |
-|------------|------------|-----------|---------|
-| Underdog calibration | +7% | No (costs) | $0 |
-| Flow following | +6.5% | No (costs) | $0 |
-| Stale window | 43% error | No (random) | $0 |
-| Player prop OVERs | +13% | No (liquidity) | $0 |
+- **Underdog calibration** — +7% edge → No (costs) → $0
+- **Flow following** — +6.5% edge → No (costs) → $0
+- **Stale window** — 43% error → No (random) → $0
+- **Player prop OVERs** — +13% edge → No (liquidity) → $0
 
 3 days. 1,600 markets. 5 daemons. 4 hypotheses.
 
