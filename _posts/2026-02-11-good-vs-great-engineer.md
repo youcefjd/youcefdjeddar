@@ -201,7 +201,7 @@ Leetcode won't teach you this. Neither will your CS degree. You learn it by payi
 
 This is also why AI won't replace senior engineers anytime soon.
 
-I've [written about this before](/the-hype-vs-reality-of-ai-replacing-engineers/) — the gap between what AI can do and what the hype claims is massive.
+I've [written about this before](/youcefdjeddar/the-hype-vs-reality/) — the gap between what AI can do and what the hype claims is massive.
 
 LLMs are great at "build me X." They're terrible at "should we build X at all?"
 
