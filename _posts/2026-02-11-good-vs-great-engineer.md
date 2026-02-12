@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "What Separates a Good Engineer from a Great Engineer"
-date: 2026-02-07
+date: 2026-02-11
 description: "Hint: it's not distributed systems wizardry."
 ---
 
