@@ -103,15 +103,36 @@ It feels premature.
 
 ---
 
-### Security reality
+### The permission delegation problem nobody talks about
 
-Thousands of MCP servers are misconfigured.
+This is where things get serious.
 
-Static credentials. Exposed endpoints. Weak access control.
+Most discussions about MCP security focus on exposed endpoints and static credentials — and yes, research shows that **~53% of MCP servers use static API keys**, with only 8.5% implementing OAuth properly.
 
-For any serious organization, that's not "cool new infra."
+But the deeper problem is **chained agents and permission propagation**.
 
-That's an attack surface.
+Here's a concrete example from my own setup.
+
+I had an MCP server for EKS calling a separate MCP server for CloudWatch to pull logs during incident triage. Simple enough in theory.
+
+In practice:
+
+* What IAM role does the EKS MCP server run under?
+* When it calls the CloudWatch MCP server — what permissions does *that* call inherit?
+* Is it the EKS role? A new role? The agent's ambient permissions?
+* Who validates scope at the boundary between the two servers?
+
+Nobody does.
+
+That's improper token delegation. A token issued for one agent gets passed to another with no scope validation. The receiving server inherits unintended privileges. Access controls break down silently.
+
+The real incident version of this isn't hypothetical: in mid-2025, a production database was deleted at SaaStr because an agent had write access it didn't need — and **nobody could revoke it granularly**. The tooling to say "this agent gets read-only CloudWatch, nothing else" simply didn't exist in a composable way.
+
+In a chained agent setup with multiple MCP servers, you're not just managing one attack surface.
+
+You're managing the intersection of all of them.
+
+And if one server is misconfigured, the blast radius isn't contained.
 
 ---
 
@@ -143,25 +164,39 @@ MCP doesn't disappear. It just becomes… quieter.
 
 ---
 
-## My Own Usage: Reality Check
+## My Own Experience: What I Actually Kept
 
 I adopted MCP early.
 
-Built servers. Integrated them. Tried to make them part of real workflows.
+Built servers. Integrated them. Tried to make them part of real production workflows.
 
-And then, gradually, I removed most of them.
+The EKS + CloudWatch setup I mentioned above? I ran it in prod for a while.
+
+It worked — until it didn't.
+
+Permission delegation was a nightmare. Every time an agent needed to cross a service boundary, I had to manually think through what credentials it had inherited, whether those made sense, and whether I'd accidentally created a privilege escalation path. It wasn't secure by default. It required constant oversight to stay sane.
+
+I eventually stripped most of it back.
 
 Replaced with direct API calls.
 
-Simpler. More reliable. Less overhead.
+Simpler. Auditable. No ambient permission weirdness.
+
+---
 
 Out of everything in this wave of tools, what do I actually use consistently?
 
-One thing:
+One thing: **Claude's Excel integration.**
 
-> Claude's Excel integration.
+And honestly — it's genuinely useful. Not in a "cool demo" way. In a "saves me real time every week" way.
 
-That's it.
+I'll admit: I almost learned Excel properly. There was even internal pressure at some point — why aren't you using the full suite, etc.
+
+I resisted. Held the line.
+
+Glad I did.
+
+The integration handles what I need without me becoming an Excel specialist. That's the bar. That's what "actually useful" looks like.
 
 ---
 
@@ -178,14 +213,40 @@ Not a demo. Not a toy. A real use case:
 * Outreach planning
 * Positioning recommendations
 
-What I got back felt dated.
-
-Playbooks that might have worked years ago. Generic strategies. Surface-level insights.
+What I got back: outdated playbooks, generic strategies, surface-level insights.
 
 Nothing that reflected the reality of 2026.
 
-![Okara AI CMO dashboard — Reddit Opportunities, SEO recommendations, and paywalled Hacker News posts](/assets/images/okara-ai-cmo-dashboard.png)
-*The AI CMO feed in action. Reddit mentions and a missing meta description. C-suite material.*
+One user on HN put it better than I can:
+
+> "Everything it recommended was outdated, super generic, or outright a bad idea."
+
+That's not a one-off. That's the product.
+
+---
+
+### What the dashboard actually shows you
+
+Here's the AI CMO feed from my session:
+
+![Okara AI CMO dashboard showing Reddit Opportunities, SEO recommendations, and paywalled Hacker News suggestions]({{ site.baseurl }}/assets/images/okara-ai-cmo-dashboard.png)
+
+Let's break down what's on screen:
+
+* **Reddit Opportunities** — "2 mentions ready." Paywalled. Upgrade to access.
+* **SEO + GEO Recommendations** — "Found 2 issues." The issues? A missing meta description and a performance score of 56. Basic Lighthouse audit stuff.
+* **Articles** — AI-written content. Locked behind the Max plan.
+* **Hacker News** — Suggested HN posts. Also paywalled.
+
+And elsewhere, the tool literally suggested I post **self-promotional tweets about Okara itself**.
+
+This is the "AI CMO."
+
+Scraped Reddit mentions. A Lighthouse score. Paywalled everything that might actually be interesting.
+
+It's not that the output is wrong. It's that it's completely trivial.
+
+Any junior intern with a browser and a Lighthouse tab could produce this in ten minutes. For free.
 
 ---
 
@@ -199,9 +260,11 @@ It's essentially:
 
 Which is fine.
 
-What's not fine is presenting that as a **C-level replacement**.
+What's not fine is calling that a **C-level replacement**.
 
 That's not a capability gap. That's a positioning problem.
+
+And it's not unique to Okara. The same pattern shows up everywhere: take a few API calls, wrap them in a dashboard, market it as autonomous intelligence.
 
 ---
 
@@ -209,9 +272,9 @@ That's not a capability gap. That's a positioning problem.
 
 Hands-on usage wasn't smooth either:
 
-* Demos that delivered nothing useful
-* Aggressive paywalls
-* Broken credit logic (running out while the balance doesn't move)
+* Demos that delivered nothing actionable
+* Aggressive paywalls on every remotely interesting feature
+* Broken credit logic — credits running out while the displayed balance doesn't move
 
 That's usually a sign of a product that shipped before it was ready.
 
@@ -219,14 +282,14 @@ Hype first. Product second.
 
 ---
 
-### Output quality
+### What it can't do
 
 The outputs tell the real story.
 
 For anything beyond generic content:
 
-* SEO/blog content is surface-level
-* Weak in expert domains (fintech, security, etc.)
+* SEO/blog output is surface-level
+* Weak in expert domains (fintech, security, deep tech)
 * Not publish-ready without heavy editing
 
 And more importantly:
@@ -237,7 +300,7 @@ No creative angles. No bold positioning. No differentiated thinking.
 
 Just execution of obvious playbooks.
 
-It behaves like a **junior assistant**.
+It behaves like a **junior assistant with a Lighthouse plugin**.
 
 Not a CMO.
 
