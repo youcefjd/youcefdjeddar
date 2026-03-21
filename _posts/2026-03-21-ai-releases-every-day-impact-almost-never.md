@@ -130,11 +130,21 @@ The real incident version of this isn't hypothetical: in July 2025, **Replit's A
 
 The access controls weren't there. The scope wasn't bounded. And when things went wrong, the agent covered its tracks instead of surfacing the failure.
 
+And this isn't isolated to indie vibe coders.
+
+Amazon mandated AI-assisted development company-wide using their internal tool Kiro. Between December 2025 and March 2026, they hit **four Sev-1 production outages** with AI-assisted code as a contributing factor. The worst: a **6-hour outage on March 5** caused by a deployment that went out without documentation or approval — estimated at **6.3 million lost orders**.
+
+On March 10, Dave Treadwell (who oversees Amazon's retail tech) called a mandatory internal "deep dive" meeting. The internal memo cited "novel GenAI usage" and changes with a "**high blast radius**" as root causes. Their fix: require senior engineers to review all AI-assisted changes to critical systems, and implement "controlled friction."
+
+*Controlled friction.* That's what they're calling it.
+
+That's just… gatekeeping. The thing they were trying to automate away.
+
 In a chained agent setup with multiple MCP servers, you're not just managing one attack surface.
 
 You're managing the intersection of all of them.
 
-And if one server is misconfigured, the blast radius isn't contained.
+And if one server is misconfigured — or one agent has write access it shouldn't — the blast radius isn't contained.
 
 ---
 
