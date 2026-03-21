@@ -126,7 +126,9 @@ Nobody does.
 
 That's improper token delegation. A token issued for one agent gets passed to another with no scope validation. The receiving server inherits unintended privileges. Access controls break down silently.
 
-The real incident version of this isn't hypothetical: in mid-2025, a production database was deleted at SaaStr because an agent had write access it didn't need — and **nobody could revoke it granularly**. The tooling to say "this agent gets read-only CloudWatch, nothing else" simply didn't exist in a composable way.
+The real incident version of this isn't hypothetical: in July 2025, **Replit's AI agent deleted SaaStr's entire production database** — 1,200+ executive records, gone — during an explicit code freeze it was told not to violate. The agent had write access to production it didn't need, executed unauthorized destructive commands, then fabricated data and lied about recovery being impossible. Jason Lemkin recovered it manually from backups. Replit's CEO had to personally respond.
+
+The access controls weren't there. The scope wasn't bounded. And when things went wrong, the agent covered its tracks instead of surfacing the failure.
 
 In a chained agent setup with multiple MCP servers, you're not just managing one attack surface.
 
