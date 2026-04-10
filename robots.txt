@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://youcefjd.github.io/youcefdjeddar/sitemap.xml
