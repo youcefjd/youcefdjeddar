@@ -1,8 +1,8 @@
 ---
 layout: post
-title: "A Museum of Inefficiencies: Why I Stopped Trying to Beat Prediction Markets"
-date: 2026-02-06
-description: "I found a 13% edge in Polymarket. I'm not going to trade it."
+title: "A Museum of Inefficiencies: What Four Killed Trading Signals Taught Me About Discipline"
+date: 2026-06-13
+description: "Four hypotheses, locked significance thresholds, and the real reason none of them were tradeable — a case study in the discipline that separates a real edge from noise."
 ---
 
 You've seen the tweets.
@@ -13,31 +13,25 @@ You've seen the tweets.
 
 "Just vibe code your way to financial freedom."
 
-I wanted to test this empirically. Not with vibes. With data.
+I wanted to test the underlying claim empirically. Not with vibes. With data — and with the same discipline I'd want from anyone telling me they'd found an edge.
 
 I found a 13% edge in Polymarket.
 
 I'm not going to trade it.
 
-Let me explain.
+Let me explain why, and why the "why" matters more than the number.
 
 ---
 
-## The Dream
+## The Question
 
-Like every engineer who's ever stared at a terminal and wondered if it could print money, I wanted passive income.
+The actual question wasn't "can I get rich." It was simpler and more useful: **can I tell a real, tradeable edge apart from noise, before I've put a dollar behind it?**
 
-Not "start a business" passive income. Not "build an audience" passive income. The real kind: find a market inefficiency, automate it, compound returns, and retire to a beach somewhere while my bots print money.
+Most "edges" people report — in prediction markets, in any market — are overfitting wearing a disguise. The only way to know if mine was different was to lock the rules before looking at the results, and be willing to walk away from a number that looked good but didn't survive scrutiny.
 
-Prediction markets seemed perfect.
-
-Polymarket. Kalshi. Platforms where people bet on real-world events—sports, crypto, politics. Surely someone is mispricing something.
-
-So I did what any reasonable person would do:
+So I did the boring, correct version of "find alpha":
 
 I built five daemons to monitor 1,600+ markets over three days, tested four statistical hypotheses with locked-in significance thresholds, and paper-traded every signal that looked promising.
-
-You know. Normal Tuesday stuff.
 
 ---
 
@@ -50,7 +44,7 @@ Here's what I was tracking:
 - **New market tracker** — Is there a "stale window" where new markets are mispriced?
 - **Player prop tracker** — Are NBA player props systematically wrong?
 
-Each hypothesis had a clear threshold:
+Each hypothesis had a clear threshold, fixed before I collected a single data point:
 
 - \>10% edge
 - Statistically significant (p < 0.05)
@@ -58,9 +52,7 @@ Each hypothesis had a clear threshold:
 
 No peeking. No mid-experiment adjustments. Lock the criteria and let the data speak.
 
-This is how you avoid fooling yourself.
-
-(I've read enough quant Twitter to know most "edges" are just overfitting in a hoodie.)
+This is the whole game. Everything downstream of this decision is just bookkeeping.
 
 ---
 
@@ -176,7 +168,7 @@ I cannot touch it.
 
 ## The Meta-Lesson
 
-Here's the part that matters:
+Here's the part that matters more than any of the four hypotheses:
 
 > **Edges persist precisely where they cannot be traded.**
 
@@ -213,34 +205,28 @@ Yes.
 
 Not because I found alpha.
 
-Because I didn't — and now I know empirically, not theoretically.
+Because I didn't — and now I know empirically, not theoretically, and I know exactly which of the four failure modes killed each hypothesis: decay, cost, noise, or liquidity. That's a more useful output than a number would have been.
 
 Most people lose money discovering that markets are efficient.
 
 I spent three days and $0 to reach the same conclusion.
 
-I also got a blog post out of it.
-
-So really, I'm up.
-
 ---
 
 ## The Takeaway
 
-If you're thinking about trying to beat prediction markets:
+If you're evaluating a claimed edge — yours or someone else's — the number is the least interesting part. The questions that actually matter:
 
-- You probably can't
-- The real edges are either too small (costs) or too illiquid (spreads)
-- This isn't a bug — it's the market working correctly
+- Did the edge survive out-of-sample, or did it decay the moment you collected more data?
+- Does it clear transaction costs, or does it just look good before them?
+- Can you actually execute it, or does the liquidity disappear exactly where the edge appears?
 
 If you find a "free money" opportunity, ask why it still exists.
 
-The answer is usually: because it isn't.
+The answer is usually: because it isn't — and the same discipline that kills a bad prediction-market signal is exactly what should be applied to any model or agent claiming it found something real, in any market.
 
 I wanted passive income from market inefficiencies.
 
-I got a lesson in market efficiency instead.
+I got a sharper filter for spotting fake edges instead.
 
 Fair trade.
-
-Now if you'll excuse me, I need to go find another way to not make money.
