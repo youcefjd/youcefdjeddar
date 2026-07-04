@@ -5,13 +5,41 @@ date: 2026-07-04
 description: "A real onboarding incident on Spark/EKS, and the verification boundary that caught what an AI coding assistant confidently got wrong."
 ---
 
-We were about to onboard a new team in production to run Spark jobs on EKS. Routine, on paper — we already had hundreds of teams running on the platform.
+I'm back for a new episode.
 
-They had a couple of custom libraries. I baked them into the base EMR image before their first job launch, standard procedure. We tested the exact same setup in dev heavily — load tests, performance tests, the works. Everything passed.
+This time, I want to talk about an interesting (and mildly infuriating) experience I had with Cursor.
 
-Before hopping on a call to walk the team through the prod CI/CD flow, I ran a dummy job in production using the baked image. Same image as staging. Byte-for-byte.
+To be clear: I *like* Cursor. Or… I liked it—in a very specific way.
 
-That's when it got interesting.
+I like that it's built on top of a familiar tool like VS Code. It's interesting. It's genuinely better than Copilot will ever be (seriously—what *is* going on at Microsoft these days?). Overall, I'm cool with Cursor.
+
+I use it occasionally for **low-cognitive-load tasks**:
+
+- Formatting CloudWatch logs
+- Checking Kubernetes pod statuses
+- Inspecting Kafka connectors
+
+Nothing crazy. (Yes, I have a few MCP servers lying around to make log-fetching easier. Occupational hazard.)
+
+---
+
+## The Setup (a.k.a. Nothing Exotic)
+
+On this particular day, my Claude Code session hit its limit, so I switched to Cursor.
+
+We were about to onboard a new team in production to run Spark jobs on EKS. No big deal. This is routine.
+
+They had a couple of custom libraries. I made sure they were baked into the base EMR image *before* their first job launch. Standard procedure.
+
+We tested the exact same setup in dev—*heavily*. Load tests, performance tests, the whole thing. Everything passed.
+
+At this point, we already had **hundreds of satisfied customers** running on the platform. So yeah, confidence was high.
+
+Before hopping on a call with the team to walk them through the prod CI/CD flow, I decided to run a dummy job in production using the baked image.
+
+Same image as staging. Byte-for-byte.
+
+And then…
 
 ---
 
@@ -19,57 +47,155 @@ That's when it got interesting.
 
 The job doesn't even reach the Kubernetes controller.
 
-Pods just sit there. **Pending.**
+Pods just sit there.
 
-My Claude Code session had hit its limit, so I was working the incident in Cursor. I asked it what was going on.
+**Pending.**
 
-Cursor confidently told me:
+Great.
+
+So I ask Cursor:
+
+> "Hey man, what's up?"
+
+Cursor confidently tells me:
 
 - Executor registration is failing
 - I'm using the wrong image
 - The entrypoint is wrong
 - `spark-submit` isn't working for executors
 
-Every engineer knows the feeling that follows: *but it literally worked yesterday.*
+Now look—this *can* happen. But every engineer knows this feeling:
 
-I asked Cursor to double-check pod status. Same answer. Categorical. Absolute.
+> *"But… it literally worked yesterday."*
+
+I ask Cursor to double-check pod status.
+
+Same answer.
+
+Categorical. Absolute. No doubt whatsoever.
 
 > **Wrong image. Period.**
+
+At this point, I'm perplexed.
 
 ---
 
 ## Reality Check (a.k.a. Logs Don't Lie)
 
-So I checked the logs myself — I keep a few MCP servers around specifically to make log-fetching fast, and this is exactly the situation they're for. I pulled Kubernetes logs directly.
+So I do what engineers still have to do in 2026: I check the logs myself.
 
-**Capacity issue.** The memory allocation for the job was too high, and Karpenter wasn't provisioning nodes fast enough. Not Karpenter's fault — a different postmortem.
+I spin up my MCP server and pull Kubernetes logs directly.
 
-I told Cursor to reduce RAM to 700MB and run a single executor. It pushed back: "that's not the problem." I overrode it and ran the job anyway.
+And guess what?
 
-It failed again. I checked Cursor. Still categorical:
+**Capacity issue.**
+
+The memory allocation for the job was too high. Karpenter wasn't provisioning nodes fast enough.
+
+(Not Karpenter's fault, by the way—but that's a different blog post.)
+
+So I tell Cursor:
+
+> "Reduce RAM to 700MB and run a single executor."
+
+Should work.
+
+Cursor pushes back.
+
+> "That's not the problem."
+
+I override it anyway. (Which means I'm now fighting **Cursor + EKS + Spark** simultaneously. Not my best day.)
+
+The job runs.
+
+I monitor logs in parallel via MCP.
+
+The job fails.
+
+I check Cursor.
+
+Once again, it's *categorical*:
 
 > Executors didn't register. Wrong image. I told you.
 
-Meanwhile my MCP server was pointing at something else entirely: a **schema mismatch** in the code. Cursor missed it, again. I fixed the schema, re-ran the job.
-
-Success. Cursor's response: no acknowledgment, no correction, just "the job succeeded."
+I swear it smirked.
 
 ---
 
-## Where the Real Risk Lives
+## The Missed Signal
 
-If a less experienced engineer had been in that seat, trusted the first confident answer, and burned hours chasing a nonexistent image problem while the actual issues — capacity, then schema — went unaddressed, that's not a hypothetical. That's a real production incident, the kind that costs a team its first-week confidence in a new platform.
+Meanwhile, my MCP server is screaming something else entirely:
 
-The danger isn't that an agent gets something wrong. It's that when an LLM hits the edge of what it knows, it doesn't say "I don't know" — it fills the gap with something plausible-sounding and states it with the same confidence as something it actually verified. There's no signal in its tone that distinguishes a guess from a fact.
+**Schema mismatch.**
+
+Fix the code.
+
+Cursor missed it. Again.
+
+I fix the schema.
+
+Re-run the job.
+
+**Success.**
+
+Cursor's response?
+
+No acknowledgment. No correction. No "hey, I was wrong."
+
+Just:
+
+> "The job succeeded."
+
+Cool.
 
 ---
 
-## The Boundary That Actually Matters
+## The Real Risk No One Talks About
 
-The lesson isn't "don't use agents in production infra." It's that the useful question isn't whether an agent is right — it's **what it's allowed to touch before a human confirms.**
+If a non-experienced engineer had been in that seat, trusted Cursor, and spent hours debugging a **nonexistent image problem** while the real issues—capacity constraints first, then a schema mismatch—went unnoticed?
 
-In this incident, the boundary that saved the debugging session wasn't a smarter model — it was a separate, independent path to ground truth (the MCP-based log access) that didn't depend on the agent's own diagnosis being correct. The agent proposed; the logs disposed.
+That's not theoretical.
 
-The operating rule I take from this: an agent can read, observe, and propose anything. It doesn't get to be the only source of truth for a diagnosis, and it doesn't get to take an irreversible action — restart, rollback, resource change — without something outside the agent's own reasoning confirming it first. Not because the agent is untrustworthy in general, but because confidence and correctness are two different signals, and only one of them is visible in the response.
+That's a **real production incident waiting to happen**.
 
-You're still the owner of the system. The agent is an increasingly useful pair of hands. It is not, yet, a second source of truth.
+Confidently wrong guidance is not just annoying—it's dangerous when it diverts attention away from the actual failure mode.
+
+---
+
+## So… What Does This Tell Us?
+
+Should we ditch agentic AI in production?
+
+**No. Absolutely not.**
+
+Should we let it run the show?
+
+**Also no. Absolutely not.**
+
+Not in production.
+Not in staging.
+Not anywhere that matters.
+
+Here's the real takeaway:
+
+> **You, as the engineer, must know what you're doing.**
+
+When an LLM gets stuck, it doesn't say *"I don't know."* It fills the gap.
+
+Fast conclusions.
+Wrong conclusions.
+Confident conclusions.
+
+There's no signal in its tone that distinguishes a guess from a verified fact—that's what makes it dangerous, not the mistake itself.
+
+If you relinquish control, it *will* dupe you—not maliciously, but mechanically.
+
+The boundary that actually saved this debugging session wasn't a smarter model. It was a separate, independent path to ground truth—the MCP-based log access—that didn't depend on Cursor's own diagnosis being correct. Cursor proposed; the logs disposed.
+
+The operating rule I take from this: an agent can read, observe, and propose anything. It doesn't get to be the only source of truth for a diagnosis, and it doesn't get to take an irreversible action—restart, rollback, resource change—without something outside its own reasoning confirming it first.
+
+AI is an assistant.
+
+You are the owner.
+
+And ownership is still very much a human responsibility.
