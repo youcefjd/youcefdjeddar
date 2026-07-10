@@ -162,5 +162,3 @@ Good benchmarks aren't about running the code once and reporting what comes out.
 ---
 
 Next up: a RAG system with a rigorous evaluation harness. Less about the pipeline, more about measuring retrieval quality honestly.
-
-*Part of a 6-month deep dive into ML systems and agent infrastructure — moving from platform engineering into building the systems that run AI agents in production.*
