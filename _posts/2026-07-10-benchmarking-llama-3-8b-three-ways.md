@@ -5,17 +5,9 @@ date: 2026-07-10
 description: "The results were satisfying. The bug I hit along the way taught me more."
 ---
 
-I'm two months into a new role.
+I wanted to actually understand how model serving works, not just repeat facts I'd read in a blog post.
 
-Staff Platform Engineer, but pointed at a different problem than usual: which model runs on which hardware, for which workload, and how the whole thing stays fast and doesn't fall over in production.
-
-I'm not a researcher.
-
-I'm not trying to become one.
-
-I'm trying to become the engineer who designs the *system* around the model — the layer nobody notices until it's slow, expensive, or down.
-
-This week: benchmark the same 8B-parameter model, served three different ways, and actually understand — not just observe — why the numbers come out the way they do.
+So this week: benchmark the same 8B-parameter model, served three different ways, and figure out — not just observe — why the numbers come out the way they do.
 
 The results were satisfying.
 
