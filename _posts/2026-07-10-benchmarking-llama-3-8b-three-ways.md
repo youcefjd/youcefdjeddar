@@ -131,23 +131,31 @@ The vLLM-vs-naive-HF gap, even at matched FP16 precision, is a separate story en
 
 ---
 
-## What This Means for the Work I Actually Want to Do
+## Finding the Actual Capacity Ceiling
 
-I'm not the person deciding *whether* to quantize a given model. That's a model or eval team's call, resting on task-specific accuracy benchmarks I didn't run here.
+The four-prompt microbenchmark above answers "which serving method is faster." It doesn't answer the question that actually matters for capacity planning: how many concurrent requests can one GPU take before it falls over?
 
-What I *am* responsible for, as a platform engineer serving these systems in production: given a quantization decision someone else made, how many concurrent sessions fit in a fixed GPU memory budget, what's the cost-per-token, what's the latency profile under real load — and whether a vendor's serving claims ("we run FP8 with per-channel quantization") are a reasonable default or something to be more skeptical of.
+So I extended it. Ran vLLM in server mode — not the offline batch API I'd used up to this point — and fired concurrent requests at it via asyncio/aiohttp, ramping concurrency from 32 up to 512, against Llama 3 8B at FP16 on the same RTX 4090.
 
-This benchmark is a small, concrete first step toward answering those questions with real numbers. Not vendor claims. Not my own assumptions before I checked.
+- **32 → 64 concurrent requests**: throughput scales close to linearly, 17 → 31 req/s, and latency barely moves. The GPU absorbs the extra load without complaint.
+- **64 → 128**: this is where it breaks. Latency jumps, and throughput stops climbing with it.
+- **128 and up**: throughput plateaus around ~38 req/s. Past this point, more concurrent requests don't buy more throughput. They just queue.
+
+The tell that it's a queueing problem and not a compute problem: the gap between average and max latency keeps widening the further past 128 you push. If the GPU itself were the bottleneck, average and max would move together — everyone equally slow. Instead, some requests sail through while others sit behind a growing line. That's a scheduling signature, not a raw-throughput one.
+
+I'm still not the person deciding *whether* to quantize a given model — that's a model or eval team's call, resting on accuracy benchmarks I didn't run here. But this is the number I actually need for my part of the job: on this hardware, at this precision, ~64 concurrent requests is where the free throughput runs out, and ~38 req/s is the ceiling no matter how many more clients you throw at it.
+
+That's a capacity budget I can plan around instead of guess at.
 
 ---
 
 ## Bottom Line
 
-The headline result — FP8 wins on both prefill and decode, for two unrelated hardware reasons — is the part I came in looking for.
+The headline result from the first pass — FP8 wins on both prefill and decode, for two unrelated hardware reasons — is the part I came in looking for.
 
-The part I didn't come in looking for: a 0.354s TTFT on the first prompt of a run isn't a data point. It's an artifact. And a memory counter reading 0 MB isn't "vLLM uses no memory" — it's "you're reading the wrong counter."
+The part I didn't come in looking for: a 0.354s TTFT on the first prompt of a run isn't a data point, it's an artifact. A memory counter reading 0 MB isn't "vLLM uses no memory," it's "you're reading the wrong counter." Neither would've shown up if I'd trusted the first average and moved on.
 
-Neither of those would've shown up if I'd trusted the first average and moved on.
+And the concurrency test isn't a production-readiness claim — one GPU, one model, one precision, synthetic load. What it is: proof that I can take a serving stack and come back with an actual capacity number instead of a shrug. That's the muscle I was actually training this week.
 
 Good benchmarks aren't about running the code once and reporting what comes out. They're about being suspicious of your own numbers until you've earned the right not to be.
 
