@@ -13,6 +13,8 @@ This is the first post in that series. It'll take weeks, maybe longer. Today was
 
 Not "is it fast." Not "which serving stack wins." Those questions are meaningless without a baseline, and I don't have one yet.
 
+So today was deliberately unglamorous. No routing logic, no scheduler, no clever quantization trick. I stood up an endpoint and stared at a spreadsheet. That's the job on day one, and skipping it is how you end up with strong opinions about a GPU you've never actually measured.
+
 ---
 
 ## The Two Things Everything Else Depends On
@@ -108,6 +110,8 @@ So here's the actual finding of the day, and it's the reason this whole project 
 
 Same GPU. Same instant. Opposite verdicts, depending entirely on who's asking.
 
+Verdict: there is no verdict. That's the finding.
+
 Neither one of those principals is wrong. There is no single configuration of this GPU that satisfies both. The knob that makes the agent fleet happy is the exact knob that ruins my own chat latency, and there's no getting around that with cleverness — it's structural, it comes straight out of the compute-bound-vs-bandwidth-bound split above.
 
 Which means admission control, priority classes, per-principal quotas, backpressure — these aren't architectural taste I'm layering on for fun. They're the only available response to a resource that has no single correct configuration when it's serving two different classes of principal off the same GPU at the same time. I went into today assuming I'd need some of that eventually. I didn't expect to get the actual number that *demands* it on day one.
@@ -121,6 +125,8 @@ Small thing, but it'll matter a lot once I start comparing quantization levels: 
 Two things fall out of that. First, a benchmarking trap: reasoning mode inflates tokens-per-request, time-to-useful-output, and cost by something like 10x on trivial prompts, and it doesn't touch TTFT at all — prefill doesn't care what happens after the first token. If I don't hold thinking mode constant across every row of every future benchmark, I risk quietly measuring a thinking-mode difference and calling it a quantization difference. Today's rows: thinking on, written down so future rows can match it or deliberately diverge from it.
 
 Second, it's a routing input. The router I eventually build isn't only choosing local-vs-hosted or small-vs-large-model. It's also choosing *how hard to think*, and "hi" is proof that deliberation isn't free just because it's automatic. That's a cost/latency/quality tradeoff sitting right there in the default behavior, and today I got to see exactly what it costs when it isn't warranted.
+
+108 tokens to decide how to say hello. The model is not stupid. It is, in this one specific moment, extremely committed to a bit nobody asked for.
 
 ---
 
@@ -143,3 +149,5 @@ If ITL halves and TTFT holds, my mental model is correct on my own silicon, not 
 ---
 
 Next up: running that FP8 prediction for real, and starting to sketch what a scheduler that actually respects the human-vs-agent split above would need to look like.
+
+I came in today just wanting to know if the GPU worked. It worked. It also handed me a distributed-systems problem I wasn't shopping for. That's a good trade for one afternoon.

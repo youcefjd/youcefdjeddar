@@ -13,6 +13,8 @@ The scope discipline that mattered: everything today runs at concurrency 1. Day 
 
 Two out of my eleven pre-registered predictions were right. That's the correct shape for a day that actually taught me something, and I want to walk through why.
 
+Nine wrong predictions sounds like a bad day. It was, if the goal was being right. It wasn't the goal.
+
 ---
 
 ## What I Ran
@@ -155,6 +157,8 @@ And +1 point isn't a real signal to begin with — with n=100 the binomial stand
 
 I want to be precise about the scope of that null result: one model, one task, one quantization scheme, n=100 per cell. It says nothing about FP4, where the mechanism for accuracy loss might genuinely be different and worse. But the version of "don't quantize reasoning models too aggressively, the errors compound" that gets repeated as received wisdom is doing work at FP8 that this data doesn't support.
 
+I'd repeated that line to other people. Confidently. It felt true the way things you've read three times start to feel true. It just wasn't, at least not here, and the only way I found out was by actually running the 2x2 instead of continuing to nod along.
+
 ---
 
 ## The Thinking Tax, Priced
@@ -210,3 +214,5 @@ Two precisions, five context lengths, a memory ratio, and a quality grid with a 
 The honest options for next time: push into FP4, which is the more speculative bet and tests whether the scale/dequant tax I found today collapses the returns the way I think it will; run the same grid through SGLang instead of vLLM, which is the actual apples-to-apples serving-stack comparison this platform needs; or stop here and ship the table, because it might already be the deliverable.
 
 I also owe myself one thing before any of that: `vllm`'s `/metrics` endpoint has been sitting there at `localhost:8000/metrics` this entire time, and I've been inferring queue depth from TTFT spread when `num_requests_running` and `num_requests_waiting` were one `curl` away the whole day. That's tomorrow's first command, regardless of which path I pick.
+
+I spent an entire day deriving queue depth from latency spread like it was 1850 and I didn't have a thermometer. There was a thermometer. It was at `/metrics`. Noted, for next time.
