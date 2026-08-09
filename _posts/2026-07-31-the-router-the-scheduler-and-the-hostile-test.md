@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Day 3: The Router, the Scheduler, and the Hostile Test That Almost Fooled Me"
+title: "Day 3: A Router and Priority Scheduler for vLLM"
 date: 2026-07-31
 description: "Why serving tokens fast isn't the same problem as serving them intelligently — a streaming translator, a scheduler that isn't Kafka, and a test I had to make adversarial before it told me the truth."
 ---

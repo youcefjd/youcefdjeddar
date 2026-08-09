@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Standing Up the Seam: Day 1 of Serving Qwen to a Fleet of Humans and Agents"
+title: "Day 1: Baselining vLLM on a Single GPU"
 date: 2026-07-15
 description: "New series. I put a GPU behind an OpenAI-compatible endpoint, measured before tuning, and found one number that turned a serving project into a distributed-systems project."
 ---

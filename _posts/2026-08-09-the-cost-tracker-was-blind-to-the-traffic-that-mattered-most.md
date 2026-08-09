@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Day 4: The Cost Tracker Was Blind to the Traffic That Mattered Most"
+title: "Day 4: Fixing a Streaming Cost-Tracking Gap"
 date: 2026-08-09
 description: "Buffered requests were trivial to bill. Streaming ones never hit the recorder at all — and streaming is most of the traffic. Closing the gap also surfaced a hardcoded token cap and turned TTFT into a metric the platform reports on its own."
 ---

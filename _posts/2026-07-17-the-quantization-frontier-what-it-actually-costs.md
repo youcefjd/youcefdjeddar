@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "The Quantization Frontier, and What It Actually Costs"
+title: "Day 2: Measuring FP8 Quantization on vLLM"
 date: 2026-07-17
 description: "I predicted FP8 would roughly double decode speed. It didn't. The reason why is more interesting than the number would've been — and it comes with a null result that contradicts something everyone repeats about quantized reasoning models."
 ---
