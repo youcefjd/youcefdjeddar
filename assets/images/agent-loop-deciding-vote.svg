@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 730" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" role="img" aria-label="Flowchart: an alert leads to an agent naming a cause and a probe. If the probe doesn't separate causes, or the action isn't reversible and observable, a human decides. Otherwise a reversible action runs with a pre-set success signal. If the signal recovers, keep it; if not, auto-revert and retry from the evidence in a fresh context.">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b949e"/>
+    </marker>
+  </defs>
+  <rect width="720" height="730" fill="#161b22" rx="8"/>
+  <text x="40" y="34" fill="#e6edf3" font-size="17" font-weight="600">The system, not an agent, casts the deciding vote</text>
+  <text x="40" y="56" fill="#8b949e" font-size="13">Blue decisions get answered by an observation, not by a model</text>
+
+  <g fill="none" stroke="#30363d" stroke-width="1.5">
+    <rect x="40" y="78" width="320" height="40" rx="6"/>
+    <rect x="40" y="145" width="320" height="56" rx="6"/>
+    <rect x="40" y="460" width="320" height="56" rx="6"/>
+    <rect x="40" y="665" width="320" height="40" rx="6"/>
+    <rect x="420" y="300" width="230" height="56" rx="6"/>
+    <rect x="420" y="562" width="230" height="56" rx="6"/>
+    <polygon points="200,425 345,390 200,355 55,390"/>
+  </g>
+  <g fill="#0f2238" stroke="#58a6ff" stroke-width="1.8">
+    <polygon points="200,235 345,270 200,305 55,270"/>
+    <polygon points="200,555 345,590 200,625 55,590"/>
+  </g>
+
+  <g fill="none" stroke="#8b949e" stroke-width="1.2" marker-end="url(#a)">
+    <line x1="200" y1="118" x2="200" y2="143"/>
+    <line x1="200" y1="201" x2="200" y2="233"/>
+    <line x1="200" y1="305" x2="200" y2="353"/>
+    <line x1="200" y1="425" x2="200" y2="458"/>
+    <line x1="200" y1="516" x2="200" y2="553"/>
+    <line x1="200" y1="625" x2="200" y2="663"/>
+    <polyline points="345,270 535,270 535,298"/>
+    <polyline points="345,390 535,390 535,358"/>
+    <line x1="345" y1="590" x2="418" y2="590"/>
+    <polyline points="650,590 690,590 690,173 362,173"/>
+  </g>
+
+  <g fill="#e6edf3" text-anchor="middle">
+    <text x="200" y="103">Anomaly or alert</text>
+    <text x="200" y="169" font-weight="600">Agent names a cause</text>
+    <text x="200" y="189">and a probe that tells causes apart</text>
+    <text x="200" y="275">Does the probe separate?</text>
+    <text x="200" y="395">Reversible and observable?</text>
+    <text x="200" y="484" font-weight="600">Reversible action</text>
+    <text x="200" y="504">with the success signal set in advance</text>
+    <text x="200" y="595">Did the signal recover?</text>
+    <text x="200" y="690">Keep it. Log the probe and outcome.</text>
+    <text x="535" y="324" font-weight="600">Human decides</text>
+    <text x="535" y="344">the only escalation left</text>
+    <text x="535" y="586" font-weight="600">Auto-revert</text>
+    <text x="535" y="606">on the signal, not a verdict</text>
+  </g>
+  <g fill="#8b949e" font-size="13">
+    <text x="365" y="262">no, report ambiguity</text>
+    <text x="365" y="382">no</text>
+    <text x="365" y="582">no</text>
+    <text x="210" y="335">yes</text>
+    <text x="210" y="447">yes</text>
+    <text x="210" y="650">yes</text>
+    <text x="680" y="163" text-anchor="end">retry from the evidence, in a fresh context</text>
+  </g>
+</svg>
