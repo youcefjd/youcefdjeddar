@@ -2,54 +2,54 @@
 layout: post
 title: "Day 3: A Router and Priority Scheduler for vLLM"
 date: 2026-07-31
-description: "Why serving tokens fast isn't the same problem as serving them intelligently — a streaming translator, a scheduler that isn't Kafka, and a test I had to make adversarial before it told me the truth."
+description: "Serving tokens fast and serving them sensibly are different problems. A streaming translator, a scheduler that isn't Kafka, and a test I had to make adversarial before it showed me what was really going on."
 ---
 
-[Day 1]({% link _posts/2026-07-15-standing-up-the-inference-seam.md %}) found the number that's been steering everything since: the same GPU, at the same instant, gives a human 14x worse latency and an agent fleet 42x more throughput, depending entirely on who's asking. [Day 2]({% link _posts/2026-07-17-the-quantization-frontier-what-it-actually-costs.md %}) spent a full day inside FP8 and ended at a fork — push into FP4, benchmark SGLang, or stop and ship the table.
+[Day 1]({% link _posts/2026-07-15-standing-up-the-inference-seam.md %}) found the number that's been steering everything since: the same GPU, at the same instant, gives a human 14x worse latency and an agent fleet 42x more throughput, depending entirely on who's asking. [Day 2]({% link _posts/2026-07-17-the-quantization-frontier-what-it-actually-costs.md %}) spent a full day inside FP8 and ended with three options: push into FP4, benchmark SGLang, or stop and ship the table.
 
-I took none of those forks. Day 1's finding was still sitting there unresolved: a GPU with no single correct configuration for two classes of user, and no mechanism yet that acts on that fact. Sharpening the quantization table further felt like polishing a number nobody downstream could use. So today pivoted to what Day 1 actually demanded — something that decides, per request, which model answers and when it runs. A router and a scheduler. Before either gets a line of code, I want to be honest about why both have to exist, because "add a router" is easy to say and easy to build for the wrong reasons.
+I didn't do any of them. Day 1's finding was still unresolved: a GPU with no single correct configuration for two kinds of user, and nothing yet that acts on that. Polishing the quantization table further felt pointless while nothing downstream could use it. So today I worked on what Day 1 called for, something that decides per request which model answers and when it runs: a router and a scheduler. Before writing any code I want to explain why both need to exist, because "add a router" is easy to say and easy to build for the wrong reasons.
 
 ---
 
-## Why a Router: Not Every Request Deserves the Same Model, or the Same Effort
+## Why a Router: Requests Need Different Models and Different Effort
 
-Most people building on LLMs make one API call to one model and move on. Fine, when you have one model, one kind of user, and no cost pressure. It stops being fine the moment any of those three changes — and in a system where humans and agents are both first-class users of the same GPU pool, all three change at once.
+Most people building on LLMs make one API call to one model and move on. That's fine with one model, one kind of user and no cost pressure. When humans and agents both use the same GPU pool, all three of those change at once.
 
-That's the system I'm building: a platform where humans and agents send requests to the same pool of models, and the infrastructure has to serve them intelligently. Not a chatbot — the control plane underneath a fleet of them. Model serving is the credibility floor, not the point. The interesting part is everything between a request arriving and a model answering it.
+That's what I'm building: a platform where humans and agents send requests to the same pool of models, and the infrastructure has to serve them sensibly. It's the control plane underneath a fleet of chatbots rather than a chatbot itself. Model serving is the minimum requirement. The interesting part is everything between a request arriving and a model answering it.
 
-Once you have more than one model — a cheap fast one and an expensive smart one — every incoming request poses a question: which one should answer this? Sending "say hi in three words" to a frontier model is waste. Sending "prove this theorem" to a tiny model is failure. Something has to decide, per request, where it goes. That decider is the router. It sits in front of the models, speaks the same API they do so callers can't tell it's there, and makes three kinds of call:
+Once you have more than one model, say a cheap fast one and an expensive smart one, every request raises the question of which should answer it. Sending "say hi in three words" to a frontier model wastes money, and sending "prove this theorem" to a tiny model gets you a bad answer. The router makes that decision per request. It sits in front of the models, speaks the same API they do so callers can't tell it's there, and makes three kinds of decision:
 
-**How hard should the model think?** Day 2 already gave me the price tag: turning thinking mode on costs 9.1x the tokens (2421 vs 265) for +5.0 points of accuracy on GSM8K. Worth it on a hard problem. Waste on "hi" — which Day 1 already caught spending 108 tokens deliberating over a greeting. The router gates thinking mode per request instead of leaving it on a blanket default.
+**How hard should the model think?** Day 2 put a price on this: thinking mode costs 9.1x the tokens (2421 vs 265) for +5.0 points of accuracy on GSM8K. That's worth it on a hard problem and a waste on "hi," which Day 1 caught spending 108 tokens on a greeting. The router turns thinking mode on or off per request instead of using one default for everything.
 
-**Which model answers?** I ran the same proof — a short number-theory argument — through both backends today. The small local model flailed its way to a correct-ish answer in 3036 tokens. The frontier model did it clean in 498. Six times the tokens for a worse result. Most requests don't need that; a fair share do. The router's job is telling which is which before either backend spends a token.
+**Which model answers?** I ran the same short number-theory proof through both backends today. The small local model struggled to a mostly-correct answer in 3036 tokens, and the frontier model did it cleanly in 498, so the small model used six times the tokens for a worse result. Most requests don't need the frontier model, but a fair number do, and the router has to tell which is which before either backend spends a token.
 
-**And it hides all of this.** The two backends don't even speak the same wire format — vLLM is OpenAI-shaped, Anthropic isn't. The router translates both directions so that from outside there's one uniform door. Same door, different rooms, caller never knows which one they walked into.
+**It also hides all of this.** The two backends don't speak the same wire format (vLLM is OpenAI-shaped, Anthropic isn't), so the router translates in both directions. From the outside there's one endpoint, and the caller doesn't know which model answered.
 
-A router turns "I have some models" into "I have a system that routes work to the right model." The difference between a pile of endpoints and a platform.
+That's the difference between having a pile of model endpoints and having a system that sends work to the right one.
 
 ## Why a Scheduler: One GPU, Two Users Who Want Opposite Things
 
-Here's the fact that forces a scheduler into existence, and Day 1 measured it before I had a name for it. Generating text has two phases with opposite characteristics. Time-to-first-token explodes under load — Day 1 clocked it at 14x worse, 16.7ms to 230ms average, going from concurrency 1 to 64. Inter-token latency barely moves — up only 34% over the same 64x range, because the weight read dominates and extra sequences ride along mostly free.
+Day 1 measured the reason a scheduler is needed before I'd named it. Generating text has two phases that behave very differently. Time-to-first-token blows up under load: Day 1 measured it 14x worse, 16.7ms to 230ms average, going from concurrency 1 to 64. Inter-token latency barely moves, up only 34% over the same range, because the weight read dominates and extra sequences come along mostly for free.
 
-Now overlay who's waiting. A human feels every millisecond of that first-token wait — staring at a screen. An agent grinding through a batch job doesn't care if it starts 200ms later; it cares about total throughput. So the two want the GPU tuned in opposite directions, and you can't maximize both for the same request at the same time. Not a preference. It's the curve Day 1 already plotted.
+Now think about who's waiting. A person staring at a screen notices every millisecond before the first token. An agent working through a batch job doesn't care if it starts 200ms later, it cares about total throughput. So they want the GPU tuned in opposite directions, and you can't optimize both for the same request at the same time. Day 1's numbers already showed that.
 
-Which means: when a human request and an agent request are both waiting, serving the human first costs the agent almost nothing and saves the human the exact thing they feel. Free value — but only if something is deciding whose request goes first. That something is the scheduler. It's the piece that knows a request belongs to a human versus an agent — the model-serving layer has no idea, to it every request is just tokens — and orders them accordingly.
+So when a human request and an agent request are both waiting, serving the human first costs the agent almost nothing and saves the human the wait they actually notice. That only happens if something decides whose request goes first, and that's the scheduler. It knows whether a request belongs to a human or an agent (the model-serving layer has no idea, to it every request is just tokens) and orders them accordingly.
 
 ## The Shape of It
 
-Put together: a request arrives, the router decides which model and how hard, the scheduler decides when it runs relative to everyone else, the model serves it, the answer streams back uniform regardless of which backend produced it. The router is what answers. The scheduler is when. Model serving sits underneath both, doing the actual generation — excellent at mechanical efficiency, deliberately blind to who's asking and what it's worth. That blindness is exactly the gap the router and scheduler fill.
+Put together: a request arrives, the router decides which model and how much thinking, the scheduler decides when it runs relative to everything else, the model serves it, and the answer streams back in the same format whichever backend produced it. The router decides who answers and the scheduler decides when. Model serving sits under both and does the generation. It's very efficient, but it has no idea who's asking or how much the request matters, and that's what the router and scheduler add.
 
-Three things got built today to close it. In order of how much each one surprised me.
+I built three things today, listed here in order of how much each one surprised me.
 
 ---
 
-## Making the Router Stream — and Why the Frontier Path Is Harder Than It Looks
+## Making the Router Stream, and Why the Frontier Path Is Harder
 
-Buffered responses are a lie of convenience. Real chat streams token by token. But adding streaming to a router that fronts two different backends isn't one feature — it's two, because the backends don't speak the same stream.
+Buffered responses are convenient, but real chat streams token by token. Adding streaming to a router in front of two different backends is really two features, because the backends stream differently.
 
-**Local (vLLM) is a pure pipe.** vLLM already emits OpenAI-format SSE chunks, so the router just relays them through. Not interesting, and it shouldn't be.
+**Local (vLLM) is a straight pipe.** vLLM already emits OpenAI-format SSE chunks, so the router just relays them.
 
-**Frontier (Claude) is a live translator.** Anthropic emits typed events — `message_start`, `content_block_delta`, `message_stop` — structurally different from OpenAI's `chat.completion.chunk`:
+**Frontier (Claude) needs live translation.** Anthropic emits typed events (`message_start`, `content_block_delta`, `message_stop`) that are structured differently from OpenAI's `chat.completion.chunk`:
 
 ```
 event: message_start
@@ -69,60 +69,60 @@ data: {"choices":[{"delta":{"content":"Euclid"}}]}
 data: [DONE]
 ```
 
-The router has to parse each Anthropic event as it arrives, pull the text out of `content_block_delta`, re-wrap it in OpenAI's chunk shape, and manufacture the `data: [DONE]` sentinel Claude never sends — Anthropic just closes the connection at `message_stop` and expects you to know that means done.
+The router has to parse each Anthropic event as it arrives, pull the text out of `content_block_delta`, re-wrap it in OpenAI's chunk shape, and add the `data: [DONE]` sentinel that Claude never sends. Anthropic just closes the connection at `message_stop` and expects you to know that means it's finished.
 
-The discipline point that mattered here: before writing the translator, I fired a raw `curl` at the Anthropic endpoint and read the actual event stream, rather than trusting my memory of the API shape. Model APIs drift. Ground truth is one `curl` away, and it's cheaper to check than to debug a translator built on a remembered shape that's a few months stale.
+Before writing the translator, I sent a raw `curl` to the Anthropic endpoint and read the actual event stream instead of trusting my memory of the API. Model APIs change, and checking takes one command, which is a lot cheaper than debugging a translator built on a format that's a few months out of date.
 
-The payoff: the caller sends `"model": "Qwen3-8B"` and gets back a streamed proof from Claude, in vLLM's wire format, and can't tell the difference from the outside. That invisibility is the router. Same door, different rooms.
+The result: the caller sends `"model": "Qwen3-8B"`, gets back a streamed proof from Claude in vLLM's wire format, and can't tell the difference.
 
-One honest wart, left un-fixed on purpose: stream granularity differs by backend. vLLM emits subword fragments — "Ele" then "ven" — because that's how its tokenizer segments. Claude emits whole clauses at a time. The router passes through whatever each backend chooses rather than trying to normalize the chunking. Smoothing it would add latency for a cosmetic win nobody asked for.
+One rough edge I left on purpose: chunk size differs by backend. vLLM emits subword fragments ("Ele" then "ven") because that's how its tokenizer splits text, while Claude sends whole clauses. The router passes through whatever each backend sends instead of normalizing it, since smoothing it out would add latency for a purely cosmetic gain.
 
 ---
 
 ## vLLM Already Has a Scheduler. So What Am I Building?
 
-Here's the moment that reframed the rest of the day. The instant I decided to build a scheduler in front of vLLM, I discovered vLLM already has one. Continuous batching — the thing that made Day 1's 42x throughput number possible — is a scheduler. It decides which sequence gets a token on each step, packs the KV cache, preempts when memory runs tight. State of the art. I am not rebuilding it.
+This changed how I thought about the rest of the day. As soon as I decided to build a scheduler in front of vLLM, I realized vLLM already has one. Continuous batching, which made Day 1's 42x throughput number possible, is a scheduler. It decides which sequence gets a token on each step, packs the KV cache, and preempts when memory runs short. It's very good and I'm not rebuilding it.
 
-So what's left? vLLM's scheduler optimizes mechanical efficiency *within one model*. It structurally cannot do three things: know who a request belongs to — human or agent — see across backends (it has no idea Claude exists), or apply a fairness policy of its own beyond "keep the GPU full."
+What vLLM's scheduler does is optimize efficiency *within one model*. It can't know whether a request belongs to a human or an agent, it can't see across backends (it has no idea Claude exists), and it has no fairness policy beyond keeping the GPU full.
 
-The division falls out cleanly: **vLLM enforces, the router decides.** vLLM ships a `priority` field it will order requests by — but it can't compute what priority a request deserves. That mapping, principal to priority, is the policy brain, and it has to live above vLLM. Real serving stacks are basically always two layers: an efficiency engine underneath, and a policy layer on top deciding what the engine should be efficient *about*. I'm not building something exotic. I'm building the standard outer layer that's supposed to sit there.
+So the split is simple: **vLLM enforces, the router decides.** vLLM has a `priority` field it will order requests by, but it can't work out what priority a request should get. Mapping users to priorities is policy, and it has to live above vLLM. Most real serving stacks have these two layers, an efficiency engine underneath and a policy layer on top deciding what to prioritize. This is the normal outer layer, nothing exotic.
 
-I didn't trust that vLLM would actually honor the priority field just because a flag exists for it. I probed it. Restarted the server with `--scheduling-policy priority`, sent one request with `priority: 0`, confirmed it was accepted without error. Accepted is not the same as acted on — a single request can't prove ordering, because there's nothing to order it against. That needs contention.
+I didn't want to assume vLLM actually honors the priority field just because the flag exists, so I tested it. I restarted the server with `--scheduling-policy priority`, sent one request with `priority: 0`, and it was accepted without error. But accepting the field doesn't prove anything about ordering, since a single request has nothing to be ordered against. That needs contention.
 
-So I made contention. Fired six heavy agent requests to saturate the GPU, then sent one human request dead last, after all six agents were already queued:
+So I created some. I sent six heavy agent requests to saturate the GPU, then sent one human request dead last, after all six agents were already queued:
 
 | Request | Priority | Launch order | Finish time |
 |---|---|---|---|
 | human | 0 | last | 0.14s |
 | agent (x6) | 10 | first | 11–16s |
 
-The request that arrived last finished roughly 100x faster than the requests ahead of it, because priority let it cut the queue. Day 1's thesis — humans and agents want the GPU tuned in opposite directions — stopped being an argument and became a measurement. And per vLLM's own published benchmarks, priority scheduling costs close to zero aggregate throughput to run. Free lunch, and I confirmed it on my own hardware instead of taking the benchmark's word for it.
+The request that arrived last finished roughly 100x faster than the ones ahead of it, because priority let it skip the queue. Day 1's claim that humans and agents want opposite things from the GPU is now backed by a measurement. vLLM's own published benchmarks say priority scheduling costs close to zero aggregate throughput, and that matched what I saw on my hardware.
 
 ---
 
-## My Scheduler Worked. Then I Tried to Starve It.
+## My Scheduler Worked, Until I Tried to Starve It
 
-A clean test that passes can hide the fact that you tested the wrong thing. This is the one where a hostile test caught what a friendly one missed, and it's the most interesting engineering of the day.
+A test that passes cleanly can hide the fact that you tested the wrong thing. Here a hostile test caught something a friendly one missed, and it was the most interesting engineering of the day.
 
-**The starvation problem.** Strict priority has no clock. If humans keep arriving, a low-priority agent never wins — it waits forever, because there's always a higher-priority request ahead of it. The standard fix is aging: a request's effective priority improves the longer it waits, so eventually it outranks everything else regardless of its starting priority.
+**The starvation problem.** Strict priority ignores time. If humans keep arriving, a low-priority agent can wait forever, because there's always a higher-priority request ahead of it. The standard fix is aging: a request's effective priority improves the longer it waits, so eventually it outranks everything else regardless of its starting priority.
 
 ```
 effective_priority = base_priority − (seconds_waited × aging_rate)
 ```
 
-**The architectural catch.** Aging requires reordering requests while they wait — a request's rank in the queue has to change without it ever being dequeued and re-enqueued. That single requirement forced the router from a stateless pass-through into a real scheduler that holds a queue in memory. And it's exactly why the right tool here is a priority queue — `heapq` for now, a Redis sorted set at scale — and not Kafka, which is the reflexive answer whenever an engineer hears "queue." Kafka's entire value proposition is preserving arrival order. Aging's entire value proposition is violating arrival order on purpose, for the requests that have waited long enough to deserve it. Kafka's core guarantee is the exact anti-feature I needed. Not a small mismatch — picking a tool whose main feature is the one thing you don't want.
+**The architectural catch.** Aging means reordering requests while they wait, so a request's position in the queue changes without it being dequeued and re-enqueued. That one requirement turned the router from a stateless pass-through into a real scheduler holding a queue in memory. It's also why the right tool is a priority queue (`heapq` for now, a Redis sorted set at scale) and not Kafka, which is what engineers tend to reach for when they hear "queue." Kafka's main guarantee is preserving arrival order, and aging deliberately breaks arrival order for requests that have waited long enough. Kafka's main feature is exactly what I didn't want here.
 
-**The batching constraint.** A naive queue that forwards requests one at a time to vLLM would destroy the 42x batching win from Day 1 — vLLM's continuous batcher needs many in-flight requests to amortize the weight read, and a strict queue serializes them. So the router keeps a fixed number of requests in flight via a semaphore and only queues the overflow. Protect the throughput bus that already works; add a fairness lane on top of it.
+**The batching constraint.** A naive queue that sends requests to vLLM one at a time would wipe out Day 1's 42x batching gain, because vLLM's continuous batcher needs many requests in flight to spread the cost of the weight read. So the router keeps a fixed number of requests in flight with a semaphore and only queues the overflow. That keeps the batching that already works and adds fairness on top.
 
-**The friendly test passed.** Agent arrives first, gets aged, finishes somewhere in the middle of a mixed batch of humans. Looked like a clean win.
+**The friendly test passed.** The agent arrived first, got aged, and finished somewhere in the middle of a mixed batch of humans. It looked fine.
 
-**The hostile test exposed the truth.** I made the test adversarial on purpose: humans arrive first and saturate the semaphore, the agent arrives late at the very bottom of the queue, then more humans stream in *after* the agent. If aging actually works, the agent should claw its way up over time despite starting last.
+**The hostile test told a different story.** I made it adversarial on purpose: humans arrive first and saturate the semaphore, the agent arrives late at the very bottom of the queue, then more humans stream in *after* the agent. If aging actually works, the agent should claw its way up over time despite starting last.
 
-It didn't look like it worked. The agent finished dead last — 11.3 seconds — behind humans that had arrived 2.4 seconds *after* it did. Aging appeared broken.
+It didn't look like it. The agent finished last, at 11.3 seconds, behind humans that had arrived 2.4 seconds *after* it. Aging seemed broken.
 
-**The diagnosis — instrument, don't guess.** Instead of cranking the aging rate up and hoping, I logged every selection event: each waiter's effective priority at that instant, and who the scheduler actually picked. The log proved the selection logic itself was correct — it did eventually pick the agent over waiting humans. The real finding was subtler and more interesting than a bug: uniform aging can't close a gap. If every request ages at the same rate, the *distance* between any two requests' effective priorities stays constant over time — aging shifts the whole distribution down together, it doesn't compress it. The agent only won by outlasting the humans that were already ahead of it when it arrived — 8.3 seconds of pure waiting — not by catching up to anyone. Correct behavior, but slow, and "slow rescue" is functionally indistinguishable from starvation if you're the one waiting.
+**The diagnosis.** Instead of turning up the aging rate and hoping, I logged every selection event: each waiting request's effective priority at that moment, and which one the scheduler picked. The log showed the selection logic was correct, and it did eventually pick the agent over waiting humans. The actual problem was more subtle than a bug: uniform aging can't close a gap. If every request ages at the same rate, the *distance* between any two requests' effective priorities stays the same. Everything shifts down together. The agent only won by outlasting the humans already ahead of it when it arrived, which took 8.3 seconds of waiting, not by catching up. That's technically correct, but if you're the one waiting, a rescue that slow feels the same as starvation.
 
-**The fix — differential rates.** Make agents age faster than humans instead of matching everyone's rate:
+**The fix: different rates.** Make agents age faster than humans instead of matching everyone's rate:
 
 ```
 agent aging_rate = 12 / sec
@@ -140,24 +140,24 @@ Now the gap between an agent and the humans ahead of it shrinks at 10 points per
 | human-A2 | 5.93s | |
 | human-B0–B3 | 7.7–9.5s | latecomers, land behind |
 
-Rescued from dead-last to 3rd place, ahead of five of the six humans in the test, while the two humans that had genuinely arrived first still won outright. Fast rescue and humans-first, both holding at once — the property I actually wanted, not the weaker one the friendly test made me think I already had.
+The agent went from last place to 3rd, ahead of five of the seven humans, while the two humans who really did arrive first still finished first. So the agent gets rescued quickly and humans still get priority, which is what I actually wanted.
 
-The thesis of the whole exercise: the clean test said "aging works." The hostile test said "aging works, but the rescue is too weak to matter, because uniform rates preserve gaps instead of closing them." That second, truer claim only surfaced because I tried to break the first one. Predict, probe, diagnose the miss, fix, re-verify — the identical loop that caught a truncation bug faking a 71% eval score on Day 2. Same discipline, different layer of the stack.
+The friendly test said aging works. The hostile test said aging works but the rescue is too weak to matter, because uniform rates keep gaps the same instead of closing them. I only found that out because I tried to break the first result. It's the same process that caught the truncation bug faking a 71% eval score on Day 2: predict, test, figure out the miss, fix, and check again.
 
 ---
 
-## Demo Values Are Not Production Values, and Saying So Is the Point
+## Demo Values Are Not Production Values
 
-Worth being explicit about the numbers above, because burying this is how a demo quietly gets mistaken for a claim. The semaphore is capped at 2 in-flight requests, and the aging rates (12/sec, 2/sec) are test fixtures chosen to force visible contention inside a test that runs in seconds, not settings I'd put in front of real traffic. Real concurrency limits come from the memory-bandwidth math Day 1 and Day 2 already worked out; real aging rates come from tuning against actual arrival patterns, not from what makes a unit test legible.
+I want to be clear about the numbers above so nobody mistakes a demo for a recommendation. The semaphore is capped at 2 in-flight requests, and the aging rates (12/sec, 2/sec) are test fixtures chosen to force visible contention inside a test that runs in seconds, not settings I'd put in front of real traffic. Real concurrency limits come from the memory-bandwidth math Day 1 and Day 2 already worked out; real aging rates come from tuning against actual arrival patterns, not from what makes a unit test legible.
 
-The gap between "I proved this mechanism works" and "this is tuned for production" is real, and I'd rather name it than let a reader assume the fixture numbers are the recommendation.
+Proving the mechanism works is not the same as tuning it for production, and I don't want anyone copying the test values.
 
 ## What Ports to Scale
 
-None of today was built as a single-node toy that gets thrown away later. The waiter set plus effective-priority selection is a `heapq` today; it's a Redis sorted set with score updates at scale — same operation, same eventual-consistency story, different storage. The semaphore is per-process concurrency control today; it's per-replica concurrency control behind a load balancer once there's more than one GPU. Single-node is where the logic gets proven, not where it stays.
+None of this is a single-node toy that gets thrown away later. The waiting set and effective-priority selection are a `heapq` today and become a Redis sorted set with score updates at scale: same operation, different storage. The semaphore is per-process concurrency control today and becomes per-replica concurrency control behind a load balancer once there's more than one GPU. Single-node is just where I'm proving the logic.
 
 ---
 
 ## What's Next
 
-Everything today ran with the router and scheduler doing correct things on a single GPU in a test harness. What I haven't done yet: run the router-plus-scheduler stack under the same concurrency sweep Day 1 ran on raw vLLM, to see what the policy layer costs in aggregate throughput once it's not artificially starved by a semaphore of 2. I expect it to be close to free, the same way priority alone was — but "I expect" is exactly the sentence that's supposed to turn into a measured number before I trust it.
+Everything today ran with the router and scheduler doing correct things on a single GPU in a test harness. What I haven't done yet: run the router-plus-scheduler stack under the same concurrency sweep Day 1 ran on raw vLLM, to see what the policy layer costs in aggregate throughput once it's not artificially starved by a semaphore of 2. I expect it to be close to free, like priority alone was, but I'd like to measure it before I believe that.

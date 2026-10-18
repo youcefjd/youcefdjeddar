@@ -220,6 +220,34 @@ body {
   margin: 1.5rem 0;
 }
 
+/* === Tables === */
+.post-content table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.post-content th,
+.post-content td {
+  border: 1px solid var(--border);
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.post-content th {
+  background: var(--bg-secondary);
+  font-weight: 600;
+}
+
+.post-content tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
 /* === Code === */
 .post-content code {
   font-family: var(--font-mono);
