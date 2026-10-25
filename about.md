@@ -1,10 +1,11 @@
 ---
 layout: page
-title: About Youcef Djeddar
+title: About
+description: About Youcef Djeddar, staff software engineer writing about AI, distributed systems, and side projects.
 permalink: /about/
 ---
 
-Hey, I'm Youcef Djeddar.
+Hey, I'm Youcef.
 
 Staff software engineer. I build and scale distributed systems.
 
