@@ -1,10 +1,10 @@
 ---
 layout: page
-title: About
+title: About Youcef Djeddar
 permalink: /about/
 ---
 
-Hey, I'm Youcef.
+Hey, I'm Youcef Djeddar.
 
 Staff software engineer. I build and scale distributed systems.
 

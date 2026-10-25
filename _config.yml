@@ -1,6 +1,15 @@
 title: AI Journal
-description: Tech, AI, and building things — at work and for fun
-author: Youcef
+description: Youcef Djeddar's blog on tech, AI, and building things — at work and for fun
+author:
+  name: Youcef Djeddar
+  url: "https://youcefjd.github.io/youcefdjeddar/about/"
+
+# Tells jekyll-seo-tag to emit Person structured data linking these profiles
+social:
+  name: Youcef Djeddar
+  links:
+    - https://www.linkedin.com/in/youcefdjeddar/
+    - https://github.com/youcefjd
 url: "https://youcefjd.github.io"
 baseurl: "/youcefdjeddar"
 
